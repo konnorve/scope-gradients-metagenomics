@@ -1,0 +1,6 @@
+# Snakemake/conda
+.snakemake/
+logs/
+benchmark/
+*.pdf
+**/__pycache__
