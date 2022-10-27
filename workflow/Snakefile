@@ -1,5 +1,3 @@
-# The main entry point of your workflow.
-# After configuring, running snakemake -n in a clone of this repository should successfully execute a dry-run of the workflow.
 from pathlib import Path
 import pandas as pd
 
@@ -9,69 +7,49 @@ SAMPLE_TABLE = pd.read_csv(config["samples"], index_col="sample_name", sep="\t")
 SAMPLE_TABLE.index = SAMPLE_TABLE.index.map(str)
 SAMPLES = SAMPLE_TABLE.index.values
 
-scratch_dir = Path(config["scratch_dir"])
-results_dir = Path(config["results"])
+ORGANISMS = list(config['input']['sccg lists'].keys())
+PHYSIOLOGY_DIMENSIONS = list(pd.read_table(config['input']['physiology data'], index_col="sample_id").columns)
+
+print(ORGANISMS)
+
+scratch_dir = Path(config["scratch directory"])
+results_dir = Path(config["results directory"])
 scratch_dict = {
-    "trimmed_reads": scratch_dir / "1_trimmed_reads", 
-    "genome_index": scratch_dir / "2_genome_index",
-    "cycog": {
-        "kaiju_assignment" : scratch_dir / "3_cycog" / "1_kaiju_assignment",
-        "taxon_assignment" : scratch_dir / "3_cycog" / "2_taxon_assignment",
-        "filtering_assignments" : scratch_dir / "3_cycog" / "3_filtered_assignments",
-        "taxon_assigned_reads" : scratch_dir / "3_cycog" / "4_taxon_assigned_reads",
-        "merged_reads" : scratch_dir / "3_cycog" / "5_merged_reads",
-        "merged_reads_histogram" : scratch_dir / "3_cycog" / "6_merged_reads_histogram",
-    },
-    "kaiju": {
-        "kaiju_assignment" : scratch_dir / "4_kaiju" / "1_kaiju_assignment",
-        "taxon_assignment" : scratch_dir / "4_kaiju" / "2_taxon_assignment",
-        "filtering_assignments" : scratch_dir / "4_kaiju" / "3_filtered_assignments",
-        "taxon_assigned_reads" : scratch_dir / "4_kaiju" / "4_taxon_assigned_reads",
-        "merged_reads" : scratch_dir / "4_kaiju" / "5_merged_reads",
-        "merged_reads_histogram" : scratch_dir / "4_kaiju" / "6_merged_reads_histogram",
-    },
-    "read_mapping": scratch_dir / "5_internal_standard_quantification",
-    "read_stats": scratch_dir / "6_read_stats",
-    "genome_filtered_internal_standards": scratch_dir / "7_internal_standard_quantification",
-    "cycog_read_stats": scratch_dir / "8_cycog_read_stats",
+    "genome_index": scratch_dir / "1_genomes" / "index",
+    "gff_concat": scratch_dir / "1_genomes" / "concat.gff",
+    "trimmed_reads": scratch_dir / "2_trimmed_reads", 
+    "map_reads_paired": scratch_dir / "3_map_reads" / "paired",
+    "map_reads_unpaired": scratch_dir / "3_map_reads" / "unpaired",
+    "counting_dir": scratch_dir / "4_read_counts",
     "done_files": {
-        "index": scratch_dir / "done" / "internal_standards_index.done"
-    }
+        "index": scratch_dir / "done_files" / "index.done"
+    },
 }
 
 results_dict = {
-    "depth_histograms" : results_dir / "depth_histograms",
-    "depth_genome" : results_dir / "depth_genome",
-    "cycog_read_counts" : results_dir / "cycog_read_counts",
-    "cycog_base_counts" : results_dir / "cycog_base_counts",
-    "taxon_read_counts" : results_dir / "taxon_read_counts.tsv",
-    "taxon_base_counts" : results_dir / "taxon_base_counts.tsv",
-    "internal_standards_read_counts" : results_dir / "internal_standards_read_counts.tsv",
-    "internal_standards_base_counts" : results_dir / "internal_standards_base_counts.tsv",
+    "organism_tables" : results_dir / "organism_count_tables",
+    "zscores" : results_dir / "zscores",
+    "omegas" : results_dir / "omegas",
+    "pca_loadings" : results_dir / "pca" / "loadings",
+    "pca_overlays" : results_dir / "pca" / "overlays",
+    "regressions" : results_dir / "regressions",
+    "heatmaps" : results_dir / "heatmaps",
 }
 
 rule all:
     input:
-        results_dict['taxon_read_counts'],
-        results_dict['taxon_base_counts'],
-        results_dict['internal_standards_read_counts'],
-        results_dict['internal_standards_base_counts'],
-        expand(results_dict["depth_histograms"] / "{filter}" / "{sample}_depth_histogram.png", filter=["filtered_mapping", "unfiltered_mapping"], sample=SAMPLES),
-        expand(results_dict["depth_genome"] / "{filter}" / "{sample}_depth_genome.png", filter=["filtered_mapping", "unfiltered_mapping"], sample=SAMPLES),
-        # expand(results_dict['cycog_read_counts'] / "{taxon}_cycog_read_counts.tsv",taxon=config["CyCOG_taxa_interest"]),
-        # expand(results_dict['cycog_base_counts'] / "{taxon}_cycog_base_counts.tsv",taxon=config["CyCOG_taxa_interest"]),
+        expand(results_dict['pca_overlays'] / "{organism}" / "{organism}_{column}_pca_overlay.png",
+            organism=ORGANISMS,
+            column=PHYSIOLOGY_DIMENSIONS),
+        expand(results_dict['regressions'] / "{organism}", organism=ORGANISMS),
+        expand(results_dict['heatmaps'] / "{organism}", organism=ORGANISMS)
 
-
-include: "rules/data_analysis.smk"
-
-
-include: "rules/kaiju.smk"
-
-
-include: "rules/map_reads_bowtie2.smk"
-
-
+        # expand(scratch_dict["counting_dir"] / "{sample}.tsv", sample=SAMPLES)
+        # expand(results_dict['organism_tables'] / "{organism}_count_table.tsv", organism=ORGANISMS)
+        
 include: "rules/run_trim.smk"
+include: "rules/ref_db_agg.smk"
+include: "rules/map_reads_bowtie2.smk"
+include: "rules/count_reads.smk"
+include: "rules/analysis.smk"
 
-
-include: "rules/samtools.smk"
