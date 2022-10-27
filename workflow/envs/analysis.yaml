@@ -1,0 +1,18 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python
+  - pandas
+  - numpy
+  - biopython
+  - pyyaml
+  - matplotlib
+  - scikit-learn
+  - seaborn
+  - pip:
+    - gffpandas
+    - plotly
+    - venn
+    - kaleido
