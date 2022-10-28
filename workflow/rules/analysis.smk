@@ -1,5 +1,3 @@
-
-
 rule generate_org_count_tables:
     input:
         htseq_out=expand(scratch_dict["counting_dir"] / "{sample}.tsv", sample=SAMPLES),

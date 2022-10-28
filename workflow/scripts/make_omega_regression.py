@@ -1,15 +1,17 @@
 import pandas as pd
 import plotly.express as px
+from pathlib import Path
 
 nutrient_concentrations = pd.read_table(snakemake.input['physiology_data'], index_col="sample_id")
 
 omegas = pd.read_table(snakemake.input['omegas'])
 out_dir = Path(snakemake.output[0])
+out_dir.mkdir()
 
-omegas = omegas.melt(id_vars='samples', var_name='stress', value_name='omega')
-df = omegas.join(nutrient_concentrations, on='samples')
+omegas = omegas.melt(id_vars='sample_id', var_name='stress', value_name='omega')
+df = omegas.join(nutrient_concentrations, on='sample_id')
 df['N_P_Ratio'] = df['NO3_NO2'] / df['PO4']
-df = df.melt(id_vars=['samples', 'stress', 'omega'], value_vars=['N_P_Ratio','SiO4','NO3_NO2','TN','TON','PO4','TP','TOP','TOC','NH4','NO2'], var_name='nut_type', value_name='nut_conc')
+df = df.melt(id_vars=['sample_id', 'stress', 'omega'], value_vars=['N_P_Ratio','SiO4','NO3_NO2','TN','TON','PO4','TP','TOP','TOC','NH4','NO2'], var_name='nut_type', value_name='nut_conc')
 
 px.scatter(
     df[(df['stress'].str.contains('Phosphorus')) & (df['nut_type'].isin(['PO4','TP','TOP']))], 

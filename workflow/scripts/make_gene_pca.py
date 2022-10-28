@@ -16,18 +16,14 @@ df = df.sub(df.mean(axis=1), axis=0).div(df.std(axis=1), axis=0)
 df.to_csv(snakemake.output['zscores'], sep='\t')
 
 omegas = df.join(lookup_table[['stress_type', 'stress_level']]).groupby(['stress_type', 'stress_level']).mean()
+omegas = omegas.T
+omegas.columns = ["_".join(col) for col in omegas.columns.values]
+omegas.index.name = "sample_id"
 omegas.to_csv(snakemake.output['omegas'], sep='\t')
 
 pca = PCA(n_components=2).fit(df.T)
 
-def change_id(oid):
-    oid = oid[:oid.rindex("_S")]
-    if 'St' in oid:
-        return f"{oid[:2]}_{oid[2:4]}_{oid[4:5]}_{int(oid[5:-1]):02d}m" 
-    else:
-        return f"{oid[:2]}_{oid[2:4]}_{oid[4:]}" 
-
-transformed_df = pd.DataFrame(pca.transform(df.T), columns=['x', 'y'], index=[change_id(i) for i in df.columns])
+transformed_df = pd.DataFrame(pca.transform(df.T), columns=['x', 'y'], index=df.columns)
 transformed_df = transformed_df.join(nutrient_concentrations)
 transformed_df.to_csv(snakemake.output['transformed_df'], sep='\t')
 
@@ -78,4 +74,4 @@ def plot_loadings(loadings_df):
     return fig
 
 fig = plot_loadings(loadings_df)
-fig.write_html(snakemake.output['loadings'])
+fig.write_html(snakemake.output['loadings_fig'])

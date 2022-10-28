@@ -3,7 +3,7 @@ import pandas as pd
 
 configfile: "config/config.yaml"
 
-SAMPLE_TABLE = pd.read_csv(config["samples"], index_col="sample_name", sep="\t")
+SAMPLE_TABLE = pd.read_csv(config["samples"], index_col="sample_id", sep="\t")
 SAMPLE_TABLE.index = SAMPLE_TABLE.index.map(str)
 SAMPLES = SAMPLE_TABLE.index.values
 
@@ -44,9 +44,6 @@ rule all:
         expand(results_dict['regressions'] / "{organism}", organism=ORGANISMS),
         expand(results_dict['heatmaps'] / "{organism}", organism=ORGANISMS)
 
-        # expand(scratch_dict["counting_dir"] / "{sample}.tsv", sample=SAMPLES)
-        # expand(results_dict['organism_tables'] / "{organism}_count_table.tsv", organism=ORGANISMS)
-        
 include: "rules/run_trim.smk"
 include: "rules/ref_db_agg.smk"
 include: "rules/map_reads_bowtie2.smk"

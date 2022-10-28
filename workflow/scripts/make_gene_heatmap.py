@@ -40,9 +40,11 @@ def plot_heatmap(results_df, cycog_df, out_path, cluster_cols=False, cluster_row
     figure.savefig(out_path)
     plt.close()
 
-df = pd.read_table(snakemake.input['zscore'], index_col='cycog_iid').T
-nut_conc = pd.read_csv(snakemake.input['physiology_data'], index_col='sample_id')
+df = pd.read_table(snakemake.input['zscores'], index_col='cycog_iid').T
+nut_conc = pd.read_table(snakemake.input['physiology_data'], index_col='sample_id')
 cycog_lookup_table = pd.read_table(snakemake.input['nutrient_stress_genes'], index_col='gene_name')
+out_dir = Path(snakemake.output[0])
+out_dir.mkdir()
 
 df.index = pd.MultiIndex.from_tuples(
     [
@@ -61,8 +63,8 @@ for cruise in df.index.unique(level='cruise'):
 
     print(cruise_subset)
 
-    plot_heatmap(cruise_subset, cycog_lookup_table, f"{cruise}_heatmap_no_clusters.png", cluster_cols=False, cluster_rows=False)
-    plot_heatmap(cruise_subset, cycog_lookup_table, f"{cruise}_heatmap_row_clusters.png", cluster_cols=False, cluster_rows=True)
-    plot_heatmap(cruise_subset, cycog_lookup_table, f"{cruise}_heatmap_all_clusters.png", cluster_cols=True, cluster_rows=True)
+    plot_heatmap(cruise_subset, cycog_lookup_table, out_dir / f"{cruise}_heatmap_no_clusters.png", cluster_cols=False, cluster_rows=False)
+    plot_heatmap(cruise_subset, cycog_lookup_table, out_dir / f"{cruise}_heatmap_row_clusters.png", cluster_cols=False, cluster_rows=True)
+    plot_heatmap(cruise_subset, cycog_lookup_table, out_dir / f"{cruise}_heatmap_all_clusters.png", cluster_cols=True, cluster_rows=True)
 
 

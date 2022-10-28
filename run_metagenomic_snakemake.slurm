@@ -21,9 +21,10 @@ snakemake \
     --use-conda \
     --conda-frontend conda \
     --rerun-incomplete \
-    --cluster "sbatch -p {resources.partition} -t {resources.time} -n {resources.ntasks} --mem={resources.mem} -o {resources.output} -e {resources.error}" \
-    --jobs 1 \
-    --keep-going
+    --cores all
+    # --cluster "sbatch -p {resources.partition} -t {resources.time} -n {resources.ntasks} --mem={resources.mem} -o {resources.output} -e {resources.error}" \
+    # --jobs 1 \
+    # --keep-going
 
 # get report once job is finished
 # snakemake --snakefile $SNAKEFILE --report report.html
