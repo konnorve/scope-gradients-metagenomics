@@ -4,74 +4,115 @@ import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
 
-df = pd.read_table(snakemake.input['organism_count_table'], index_col="cycog_iid")
-lookup_table = pd.read_table(snakemake.input['nutrient_stress_genes'], index_col="cycog_id")
+from dataclasses import dataclass
+import yaml
+@dataclass
+class smk:
+    input: dict
+    output: dict
+    config: dict
+with open('/home/kve/scripts/scope_gradients_metagenomics/config/config.yaml') as f:
+    config = yaml.safe_load(f)
+snakemake = smk(
+    input=dict(
+        organism_count_table = "/nfs/chisholmlab001/kve/2022_scope_gradients_HL_adaptation/results/organism_count_tables/Prochlorococcus_count_table.tsv",
+        physiology_data = "/nfs/chisholmlab001/kve/2022_scope_gradients_HL_adaptation/inputs/physiology_data/nutrient_concentrations_seaflow.tsv",
+    ),
+    output=dict(
+        zscores = "/dev/null",
+        omegas = "/dev/null",
+        loadings_df = "/dev/null",
+        loadings_fig = "hello.html",
+        transformed_df = "/dev/null",
+    ),
+    config=config
+)
+
+counts = pd.read_table(snakemake.input['organism_count_table'], index_col="cycog_iid")
 nutrient_concentrations = pd.read_table(snakemake.input['physiology_data'], index_col="sample_id")
 
-df = df.loc[[cycog for cycog in lookup_table.index.to_list() if cycog in df.index.to_list()]]
+cycogs_in_config = set()
+for v in snakemake.config['omegas'].values():
+    cycogs_in_config |= set(v['genes'].values())
+cycogs_in_counts = set(counts.index.to_list())
+cycogs_for_analysis = cycogs_in_config.intersection(cycogs_in_counts)
+
+counts = counts.loc[list(cycogs_for_analysis)]
 
 # convert frequencies into z scores
-df = df.sub(df.mean(axis=1), axis=0).div(df.std(axis=1), axis=0)
+zscores = counts.sub(counts.mean(axis=1), axis=0).div(counts.std(axis=1), axis=0)
+zscores.to_csv(snakemake.output['zscores'], sep='\t')
 
-df.to_csv(snakemake.output['zscores'], sep='\t')
-
-omegas = df.join(lookup_table[['stress_type', 'stress_level']]).groupby(['stress_type', 'stress_level']).mean()
-omegas = omegas.T
-omegas.columns = ["_".join(col) for col in omegas.columns.values]
+omegas = []
+for omega, info in snakemake.config['omegas'].items():
+    omega_series = zscores.loc[list(set(info['genes'].values()).intersection(cycogs_for_analysis))].mean()
+    omega_series.name = omega
+    omegas.append(omega_series)
+omegas = pd.concat(omegas, axis=1)
 omegas.index.name = "sample_id"
 omegas.to_csv(snakemake.output['omegas'], sep='\t')
 
-pca = PCA(n_components=2).fit(df.T)
+pca = PCA(n_components=2).fit(zscores.T)
 
-transformed_df = pd.DataFrame(pca.transform(df.T), columns=['x', 'y'], index=df.columns)
+transformed_df = pd.DataFrame(pca.transform(zscores.T), columns=['x', 'y'], index=zscores.columns)
 transformed_df = transformed_df.join(nutrient_concentrations)
 transformed_df.to_csv(snakemake.output['transformed_df'], sep='\t')
 
-loadings_df = pd.DataFrame(pca.components_.T*np.sqrt(pca.explained_variance_), columns=['x', 'y'], index=df.index)
-loadings_df = loadings_df.join(lookup_table)
+loadings_df = pd.DataFrame(pca.components_.T*np.sqrt(pca.explained_variance_), columns=['x', 'y'], index=zscores.index)
 loadings_df.to_csv(snakemake.output['loadings_df'], sep='\t')
 
-def plot_loadings(loadings_df):
-    fig = go.Figure()
-    omega_loadings_df = loadings_df[['x','y','stress_type', 'stress_level']].groupby(['stress_type', 'stress_level']).mean()
-    omega_loadings_df.index = [f"omega {' '.join(i)}" for i in omega_loadings_df.index.to_flat_index()]
+fig = go.Figure()
+
+unique_attributes = dict()
+for omega, info in snakemake.config['omegas'].items():
+    for k, v in info['attributes'].items():
+        if k in unique_attributes.keys():
+            unique_attributes[k].add(v)
+        else:
+            unique_attributes[k] = set([v])
+
+# make attribute marker and color dictionary
+color_attr = 'nutrient'
+marker_attr = 'level'
+
+color_dict = {t:c for t, c in zip(unique_attributes[color_attr], px.colors.qualitative.Plotly)}
+marker_dict = {t:c for t, c in zip(unique_attributes[marker_attr], ['circle', 'square', 'diamond', 'cross', 'x'])}
+
+for omega, info in snakemake.config['omegas'].items():
+    for gene, cycog in info['genes'].items():
+        if cycog in cycogs_for_analysis:
+            fig.add_trace(
+                go.Scatter(
+                    x=[0, loadings_df.loc[cycog, 'x']],
+                    y=[0, loadings_df.loc[cycog, 'y']],
+                    name=gene,
+                    legendgroup=omega,
+                    legendgrouptitle_text=omega,
+                    marker_color=color_dict[info['attributes'][color_attr]],
+                    marker_symbol=marker_dict[info['attributes'][marker_attr]],
+                    # text=f"cycog: {cycog}<br>"+"<br>".join([f"{k}: {v}" for k,v in row.to_dict().items()])
+                )
+            )
+
+for omega, info in snakemake.config['omegas'].items():
+    omega_series = loadings_df.loc[list(set(info['genes'].values()).intersection(cycogs_for_analysis))].mean()
     fig.add_trace(
         go.Scatter(
-            x=omega_loadings_df['x'].values,
-            y=omega_loadings_df['y'].values,
-            name="Omegas",
+            x=[omega_series.loc['x']],
+            y=[omega_series.loc['y']],
+            name=f'&#937; {omega}',
             legendgroup="Omegas",
             legendgrouptitle_text="Omegas",
             marker_color='black',
             marker_symbol='circle',
             mode="text+markers",
-            text=[l.replace('omega', '&#937;') for l in omega_loadings_df.index.values],
+            text=f'&#937; {omega}',
             textposition="top center"
         )
     )
 
-    color_dict = {t:c for t, c in zip(loadings_df.stress_type.unique(), px.colors.qualitative.Plotly)}
-    marker_dict = {t:c for t, c in zip(loadings_df.stress_level.unique(), ['circle', 'square', 'diamond', 'cross', 'x'])}
-    for cycog, row in loadings_df.iterrows():
-        group=f"{row['stress_level']} {row['stress_type']}"
-        fig.add_trace(
-            go.Scatter(
-                x=[0, row['x']],
-                y=[0, row['y']],
-                name=row['gene_name'],
-                legendgroup=group,
-                legendgrouptitle_text=group,
-                marker_color=color_dict[row['stress_type']],
-                marker_symbol=marker_dict[row['stress_level']],
-                text=f"cycog: {cycog}<br>"+"<br>".join([f"{k}: {v}" for k,v in row.to_dict().items()])
-            )
-        )
-
-    fig.update_layout(
-        xaxis_title=f"PCA1 ({pca.explained_variance_ratio_[0]:.0%} of variance explained)",
-        yaxis_title=f"PCA2 ({pca.explained_variance_ratio_[1]:.0%} of variance explained)",
-    )
-    return fig
-
-fig = plot_loadings(loadings_df)
+fig.update_layout(
+    xaxis_title=f"PCA1 ({pca.explained_variance_ratio_[0]:.0%} of variance explained)",
+    yaxis_title=f"PCA2 ({pca.explained_variance_ratio_[1]:.0%} of variance explained)",
+)
 fig.write_html(snakemake.output['loadings_fig'])

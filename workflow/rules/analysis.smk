@@ -22,7 +22,6 @@ rule generate_org_count_tables:
 rule make_gene_pca:
     input:
         organism_count_table = results_dict['organism_tables'] / "{organism}_count_table.tsv",
-        nutrient_stress_genes = config['input']['nutrient stress genes'],
         physiology_data = config['input']['physiology data'],
     output:
         zscores = results_dict['zscores'] / "{organism}_zscores.tsv",
@@ -81,7 +80,6 @@ rule make_omega_regression:
 rule make_gene_heatmap:
     input:
         zscores = results_dict['zscores'] / "{organism}_zscores.tsv",
-        nutrient_stress_genes = config['input']['nutrient stress genes'],
         physiology_data = config['input']['physiology data'],
     output:
         directory(results_dict['heatmaps'] / "{organism}")
