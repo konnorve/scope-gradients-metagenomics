@@ -4,30 +4,6 @@ import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
 
-from dataclasses import dataclass
-import yaml
-@dataclass
-class smk:
-    input: dict
-    output: dict
-    config: dict
-with open('/home/kve/scripts/scope_gradients_metagenomics/config/config.yaml') as f:
-    config = yaml.safe_load(f)
-snakemake = smk(
-    input=dict(
-        organism_count_table = "/nfs/chisholmlab001/kve/2022_scope_gradients_HL_adaptation/results/organism_count_tables/Prochlorococcus_count_table.tsv",
-        physiology_data = "/nfs/chisholmlab001/kve/2022_scope_gradients_HL_adaptation/inputs/physiology_data/nutrient_concentrations_seaflow.tsv",
-    ),
-    output=dict(
-        zscores = "/dev/null",
-        omegas = "/dev/null",
-        loadings_df = "/dev/null",
-        loadings_fig = "hello.html",
-        transformed_df = "/dev/null",
-    ),
-    config=config
-)
-
 counts = pd.read_table(snakemake.input['organism_count_table'], index_col="cycog_iid")
 nutrient_concentrations = pd.read_table(snakemake.input['physiology_data'], index_col="sample_id")
 
