@@ -42,7 +42,7 @@ rule all:
             organism=ORGANISMS,
             column=PHYSIOLOGY_DIMENSIONS),
         expand(results_dict['regressions'] / "{organism}", organism=ORGANISMS),
-        expand(results_dict['heatmaps'] / "{organism}", organism=ORGANISMS)
+        # expand(results_dict['heatmaps'] / "{organism}", organism=ORGANISMS)
 
 include: "rules/run_trim.smk"
 include: "rules/ref_db_agg.smk"
