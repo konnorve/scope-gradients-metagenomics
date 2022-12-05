@@ -34,4 +34,7 @@ htseq_counts_df = htseq_counts_df.groupby(level=['sample_id','cycog_iid'])['coun
 sccg_avg_series = htseq_counts_df.loc[sccg_cycog_list].mean(axis=0)
 htseq_counts_df = htseq_counts_df.divide(sccg_avg_series, axis='columns')
 
-htseq_counts_df.to_csv(snakemake.output[0], sep='\t')
+sccg_avg_series.name = 'sccg_coverage'
+
+htseq_counts_df.to_csv(snakemake.output['counts'], sep='\t')
+sccg_avg_series.to_csv(snakemake.output['sccg_coverage'], sep='\t')

@@ -163,15 +163,39 @@ nutrient regressions:
     - NH4_uM
     - N_P_Ratio
   
-# SiO4_uM
-# TOC_uM
-# Fe_nM
-# Zn_nM
-# Cd_pM
-# Ni_nM
-# Cu_nM
-# Pb_pM
-# Mn_nM
-# Co_pM
-# UnderwayTermperature_degC
-# UnderwaySalnity_PSU
+omegas heatmap:
+  columns:
+    nutrient: "tab10"
+    level: "light:red"
+  rows:
+    latitude: "light:blue"
+    temperature: "light:orange"
+
+physiology heatmap:
+  sort order:
+    - latitude
+    - temperature
+  ascending: False
+  colors:
+    latitude: Purples
+    temperature: coolwarm
+    UnderwaySalnity_PSU: BuPu
+    Fe_nM: Greens
+    PO4_uM: Blues
+    TP_uM: Blues
+    TOP_uM: Blues
+    NO3_NO2_uM: Oranges
+    TN_uM: Oranges
+    TON_uM: Oranges
+    NH4_uM: Oranges
+    NO2_uM: Oranges
+    N_P_Ratio: Oranges
+    TOC_uM: Reds
+    SiO4_uM: GnBu
+    Zn_nM: Greys
+    Cd_pM: Greys
+    Ni_nM: Greys
+    Cu_nM: Greys
+    Pb_pM: Greys
+    Mn_nM: Greys
+    Co_pM: Greys

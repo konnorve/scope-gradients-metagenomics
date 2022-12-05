@@ -5,7 +5,8 @@ rule generate_org_count_tables:
         img_lookup_table=config['input']['reference genome lookup table'],
         cycog_lookup_table=config['input']['cycog lookup table'],
     output:
-        results_dict['organism_tables'] / "{organism}_count_table.tsv"
+        counts = results_dict['organism_tables'] / "{organism}_count_table.tsv",
+        sccg_coverage = results_dict['organism_tables'] / "{organism}_sccg_coverage.tsv",
     conda:
         "../envs/analysis.yaml"
     resources:
@@ -82,7 +83,7 @@ rule make_gene_heatmap:
         zscores = results_dict['zscores'] / "{organism}_zscores.tsv",
         physiology_data = config['input']['physiology data'],
     output:
-        directory(results_dict['heatmaps'] / "{organism}")
+        directory(results_dict['gene_heatmaps'] / "{organism}")
     conda:
         "../envs/analysis.yaml"
     resources:
@@ -95,3 +96,19 @@ rule make_gene_heatmap:
     script:
         "../scripts/make_gene_heatmap.py"
 
+rule make_physiology_heatmap:
+    input:
+        config['input']['physiology data'],
+    output:
+        directory(results_dict['physiology_heatmaps'])
+    conda:
+        "../envs/analysis.yaml"
+    resources:
+        partition = 'sched_mit_chisholm',
+        mem = '10G',
+        ntasks = 1,
+        time = '0-1',
+        output = 'logs/smk_slurm/%j_slurm.out',
+        error = 'logs/smk_slurm/%j_slurm.err',
+    script:
+        "../scripts/make_physiology_heatmap.py"

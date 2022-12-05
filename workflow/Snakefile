@@ -33,7 +33,8 @@ results_dict = {
     "pca_loadings" : results_dir / "pca" / "loadings",
     "pca_overlays" : results_dir / "pca" / "overlays",
     "regressions" : results_dir / "regressions",
-    "heatmaps" : results_dir / "heatmaps",
+    "gene_heatmaps" : results_dir / "gene_heatmaps",
+    "physiology_heatmaps" : results_dir / "physiology_heatmaps",
 }
 
 rule all:
@@ -42,11 +43,11 @@ rule all:
             organism=ORGANISMS,
             column=PHYSIOLOGY_DIMENSIONS),
         expand(results_dict['regressions'] / "{organism}", organism=ORGANISMS),
-        # expand(results_dict['heatmaps'] / "{organism}", organism=ORGANISMS)
+        expand(results_dict['gene_heatmaps'] / "{organism}", organism=ORGANISMS),
+        results_dict['physiology_heatmaps']
 
 include: "rules/run_trim.smk"
 include: "rules/ref_db_agg.smk"
 include: "rules/map_reads_bowtie2.smk"
 include: "rules/count_reads.smk"
 include: "rules/analysis.smk"
-

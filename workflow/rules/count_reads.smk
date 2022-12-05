@@ -10,8 +10,6 @@ rule count_reads:
         "../envs/htseq-count.yaml"
     log: 
         "logs/count_reads/{sample}.log"
-    # benchmark: 
-    #     "benchmark/count_reads/{sample}.benchmark"
     resources: 
         partition = 'sched_mit_chisholm',
         mem = '10G',

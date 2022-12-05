@@ -14,12 +14,13 @@ df = pd.melt(df,
     var_name='omega_name', 
     value_name='omega_value')
 
-for nutrient_type, nutrient_concentration in snakemake.config['nutrient regressions'].items():
-    nutrient_type_omegas = [omega for omega, info in snakemake.config['omegas'] if info['attributes']['nutrient']==nutrient_type]
-    px.scatter(
-        df[df['omega_name'].isin(nutrient_type_omegas)], 
-        x=nutrient_concentration, 
-        y='omega_value', 
-        color='omega_name',
-        log_x=True, trendline="ols", trendline_options={'log_x':True}
-    ).write_image(out_dir / f"{nutrient_type}_{nutrient_concentration}_nitrogen_stress.png")
+for nutrient_type, nutrient_concentration_list in snakemake.config['nutrient regressions'].items():
+    nutrient_type_omegas = [omega for omega, info in snakemake.config['omegas'].items() if info['attributes']['nutrient']==nutrient_type]
+    for nutrient_concentration in nutrient_concentration_list:
+        px.scatter(
+            df[df['omega_name'].isin(nutrient_type_omegas)], 
+            x=nutrient_concentration, 
+            y='omega_value', 
+            color='omega_name',
+            log_x=True, trendline="ols", trendline_options={'log_x':True}
+        ).write_image(out_dir / f"{nutrient_type}_{nutrient_concentration}_nitrogen_stress.png")
